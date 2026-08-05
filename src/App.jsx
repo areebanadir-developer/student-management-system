@@ -19,6 +19,14 @@ function App() {
 
   const [search, setSearch] = useState("");
 
+  const resetForm = () => {
+    setName("");
+    setRollNo("");
+    setDepartment("");
+    setSemester("");
+    setCgpa("");
+  };
+
   const addStudent = async () => {
 
     if (!name || !rollNo || !department || !semester || !cgpa) {
@@ -30,7 +38,7 @@ function App() {
       return;
     }
 
-    const student = { name, rollNo, department, semester, cgpa };
+    const student = { name, rollNo, department, semester, cgpa: parseFloat(cgpa) };
 
     try {
       const res = await axios.post("http://localhost:5001/students", student);
@@ -44,11 +52,7 @@ function App() {
       });
 
       getStudents();
-      setName("");
-      setRollNo("");
-      setDepartment("");
-      setSemester("");
-      setCgpa("");
+      resetForm();
 
     } catch (error) {
       Swal.fire({
@@ -71,12 +75,22 @@ function App() {
 
   const updateStudent = async () => {
 
+    // same validation as addStudent, so empty fields can't be saved on edit
+    if (!name || !rollNo || !department || !semester || !cgpa) {
+      Swal.fire({
+        icon: "warning",
+        title: "Missing Fields",
+        text: "Please fill all fields!",
+      });
+      return;
+    }
+
     const student = {
       name,
       rollNo,
       department,
       semester,
-      cgpa
+      cgpa: parseFloat(cgpa)
     };
 
     try {
@@ -96,17 +110,18 @@ function App() {
 
       await getStudents();
 
-      setName("");
-      setRollNo("");
-      setDepartment("");
-      setSemester("");
-      setCgpa("");
+      resetForm();
 
       setEditId(null);
       setIsEditing(false);
 
     } catch (error) {
-      alert(error.response.data.message);
+      // was: alert(error.response.data.message) — crashed if error.response was undefined
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: error.response?.data?.message || "Something went wrong!",
+      });
     }
   };
 
@@ -123,6 +138,12 @@ function App() {
 
   };
 
+  const cancelEdit = () => {
+    setIsEditing(false);
+    setEditId(null);
+    resetForm();
+  };
+
 
   const deleteStudent = async (id) => {
 
@@ -136,7 +157,7 @@ function App() {
       confirmButtonText: "Yes, delete it!",
     });
 
-    if (!confirmDelete) return;
+    if (!result.isConfirmed) return;
 
     try {
 
@@ -271,7 +292,7 @@ function App() {
 
             </div>
 
-            <div className="flex justify-center mt-8">
+            <div className="flex justify-center gap-3 mt-8">
 
               <button
                 onClick={isEditing ? updateStudent : addStudent}
@@ -282,6 +303,15 @@ function App() {
               >
                 {isEditing ? "✏️ Update Student" : "➕ Add Student"}
               </button>
+
+              {isEditing && (
+                <button
+                  onClick={cancelEdit}
+                  className="px-10 py-3 rounded-full text-violet-700 font-bold border border-violet-300 bg-white shadow-md transition duration-300 hover:scale-105 hover:bg-violet-50"
+                >
+                  ❌ Cancel
+                </button>
+              )}
 
             </div>
 
